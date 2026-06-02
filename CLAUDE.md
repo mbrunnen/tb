@@ -4,13 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`tb` is a CLI for ThingsBoard OTA package management. It uses an auto-generated Python client from an OpenAPI spec and exposes `tb config` and `tb ota` subcommands.
+`tb` is a CLI for ThingsBoard OTA package management. It uses a Python client generated from `openapi.json` and exposes `tb config` and `tb ota` subcommands.
 
-The generated client lives in `tb_client/` and must not be edited by hand. Regenerate it with:
-
-```sh
-./generate.sh
-```
+The client lives in `tb_client/`.
 
 ## Commands
 
@@ -34,7 +30,7 @@ uv run ruff format --check tb/ tests/  # format check
 - `tb/cli.py` - root Typer app
 - `tb/config.py` - reads/writes `~/.config/tb/config.toml` (url + token)
 - `tb/commands/` - one module per subcommand group (`config_cmd.py`, `ota.py`)
-- `tb_client/` - AUTO-GENERATED from `openapi.json` via `generate.sh`
+- `tb_client/` - Python client generated from `openapi.json`
 
 Auth uses `X-Authorization: ApiKey <token>` via the generated client's `Configuration.api_key`.
 
