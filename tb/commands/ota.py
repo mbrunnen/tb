@@ -31,7 +31,7 @@ def _get_api(profile: str):
         typer.echo(f"Profile '{profile}' not configured. Run `tb config set-url`.", err=True)
         raise typer.Exit(1)
 
-    configuration = Configuration(host=conf["url"])
+    configuration = Configuration(host=conf["url"].rstrip("/"))
     configuration.api_key = {"API key form": conf["token"]}
     configuration.api_key_prefix = {"API key form": "ApiKey"}
     return OtaPackageControllerApi(ApiClient(configuration=configuration))
