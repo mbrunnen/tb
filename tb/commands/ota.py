@@ -32,7 +32,8 @@ def _get_api(profile: str):
         raise typer.Exit(1)
 
     configuration = Configuration(host=conf["url"])
-    configuration.api_key = {"X-Authorization": f"ApiKey {conf['token']}"}
+    configuration.api_key = {"API key form": conf["token"]}
+    configuration.api_key_prefix = {"API key form": "ApiKey"}
     return OtaPackageControllerApi(ApiClient(configuration=configuration))
 
 
