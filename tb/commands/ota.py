@@ -94,7 +94,13 @@ def list_packages(
         return
 
     if output_json:
-        typer.echo(json.dumps([pkg.to_dict() for pkg in result.data], indent=2, default=str))
+        typer.echo(
+            json.dumps(
+                [pkg.model_dump(by_alias=True, exclude_none=True) for pkg in result.data],
+                indent=2,
+                default=str,
+            )
+        )
         return
 
     table = Table(show_header=True, header_style="bold")
