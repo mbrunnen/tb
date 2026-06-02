@@ -17,7 +17,7 @@ def _format_size(size_bytes) -> str:
     return f"{size_bytes / 1024**2:.1f} MB"
 
 
-def _get_api():
+def _get_api(profile: str):
     try:
         from tb_client.api.ota_package_controller_api import OtaPackageControllerApi
         from tb_client.api_client import ApiClient
@@ -26,9 +26,9 @@ def _get_api():
         typer.echo("tb_client not found. Run ./generate.sh to generate the client.", err=True)
         raise typer.Exit(1)
 
-    conf = cfg.load()
+    conf = cfg.load(profile)
     if not conf.get("url") or not conf.get("token"):
-        typer.echo("Not configured. Run `tb config set-url` and `tb config set-token`.", err=True)
+        typer.echo(f"Profile '{profile}' not configured. Run `tb config set-url`.", err=True)
         raise typer.Exit(1)
 
     configuration = Configuration(host=conf["url"])
@@ -38,12 +38,13 @@ def _get_api():
 
 @app.command("list")
 def list_packages(
+    ctx: typer.Context,
     page_size: int = typer.Option(20, "--page-size", help="Packages per page."),
 ):
     from rich.console import Console
     from rich.table import Table
 
-    api = _get_api()
+    api = _get_api(ctx.obj["profile"])
     result = api.get_ota_packages(page_size=page_size, page=0)
 
     if not result.data:
@@ -73,19 +74,20 @@ def list_packages(
 
 
 @app.command("get")
-def get_package(id: str = typer.Argument(help="OTA package UUID.")):
-    api = _get_api()
+def get_package(ctx: typer.Context, id: str = typer.Argument(help="OTA package UUID.")):
+    api = _get_api(ctx.obj["profile"])
     pkg = api.get_ota_package_info_by_id(ota_package_id=id)
     typer.echo(json.dumps(pkg.to_dict(), indent=2, default=str))
 
 
 @app.command("delete")
 def delete_package(
+    ctx: typer.Context,
     id: str = typer.Argument(help="OTA package UUID."),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
 ):
     if not yes:
         typer.confirm(f"Delete OTA package {id}?", abort=True)
-    api = _get_api()
+    api = _get_api(ctx.obj["profile"])
     api.delete_ota_package(ota_package_id=id)
     typer.echo(f"Deleted {id}")
