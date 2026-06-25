@@ -29,8 +29,11 @@ uv run ruff format --check tb/ tests/  # format check
 
 - `tb/cli.py` - root Typer app
 - `tb/config.py` - reads/writes `~/.config/tb/config.toml` (url + token)
-- `tb/commands/` - one module per subcommand group (`config_cmd.py`, `ota.py`)
+- `tb/commands/` - one module per subcommand group (`config_cmd.py`, `ota.py`, `telemetry.py`, `attributes.py`)
+- `tb/commands/_client.py` - shared helpers for the telemetry/attributes commands: authenticated client builders, `resolve_device_id` (UUID or name lookup), `handle_api_error`, and `parse_response`
 - `tb_client/` - Python client generated from `openapi.json`
+
+The generated client returns telemetry and attribute endpoints as a Python `repr` string (single-quoted, not valid JSON). `parse_response` coerces these via `json.loads` then `ast.literal_eval`; wrap every such response in it.
 
 Auth uses `X-Authorization: ApiKey <token>` via the generated client's `Configuration.api_key`.
 

@@ -38,7 +38,18 @@ tb ota list --json
 
 tb ota get <uuid>
 tb ota delete <uuid>
+
+tb telemetry keys <device>
+tb telemetry latest <device> --keys temperature,humidity
+tb telemetry history <device> --keys temperature --last 24h
+tb telemetry history <device> --keys temperature --start 2026-06-01 --end 2026-06-25
+
+tb attributes get <device>
+tb attributes get <device> --scope SERVER_SCOPE --keys fwVersion
 ```
+
+`<device>` accepts a device UUID or a device name. Name resolution needs an API
+token with tenant device-read permission; otherwise pass the UUID directly.
 
 ## Development
 
