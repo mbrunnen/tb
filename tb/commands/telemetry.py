@@ -49,6 +49,41 @@ def _parse_time(value: str, now_ms: int) -> int:
     return int(dt.timestamp() * 1000)
 
 
+def _plot(result) -> None:
+    """Render telemetry series as a terminal line chart.
+
+    Skips non-numeric points; exits with an error if no series has numeric data.
+    """
+    import plotext as plt
+
+    plt.clf()
+    plt.date_form("Y-m-d H:M")
+    plotted = False
+    for key in sorted(result):
+        xs, ys = [], []
+        for point in result[key] or []:
+            try:
+                value = float(point.get("value"))
+            except (TypeError, ValueError):
+                continue
+            ys.append(value)
+            xs.append(
+                datetime.fromtimestamp(point["ts"] / 1000, tz=timezone.utc).strftime(
+                    "%Y-%m-%d %H:%M"
+                )
+            )
+        if ys:
+            plt.plot(xs, ys, label=key)
+            plotted = True
+
+    if not plotted:
+        typer.echo("No numeric data points to plot.", err=True)
+        raise typer.Exit(1)
+
+    plt.title("Telemetry history")
+    plt.show()
+
+
 @app.command("keys")
 def list_keys(
     ctx: typer.Context,
@@ -123,7 +158,12 @@ def history(
     agg: str = typer.Option(None, "--agg", help="Aggregation: MIN, MAX, AVG, SUM, COUNT, NONE."),
     interval: int = typer.Option(None, "--interval", help="Aggregation interval in ms."),
     output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON."),
+    plot: bool = typer.Option(False, "--plot", help="Render a terminal line chart."),
 ):
+    if plot and output_json:
+        typer.echo("--plot and --json are mutually exclusive.", err=True)
+        raise typer.Exit(1)
+
     now_ms = _now_ms()
     if last:
         start_ms = _parse_time(last, now_ms)
@@ -161,6 +201,10 @@ def history(
 
     if not result:
         typer.echo("No telemetry found in the given range.")
+        return
+
+    if plot:
+        _plot(result)
         return
 
     from rich.console import Console

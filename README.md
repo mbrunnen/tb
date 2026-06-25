@@ -43,6 +43,7 @@ tb telemetry keys <device>
 tb telemetry latest <device> --keys temperature,humidity
 tb telemetry history <device> --keys temperature --last 24h
 tb telemetry history <device> --keys temperature --start 2026-06-01 --end 2026-06-25
+tb telemetry history <device> --keys temperature --last 7d --plot
 
 tb attributes get <device>
 tb attributes get <device> --scope SERVER_SCOPE --keys fwVersion

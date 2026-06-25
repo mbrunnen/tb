@@ -78,6 +78,59 @@ def test_history():
     assert "21.6" in result.output
 
 
+def test_history_plot():
+    api = MagicMock()
+    api.get_timeseries.return_value = (
+        "{'temperature': ["
+        "{'ts': 1700000000000, 'value': '21.5'}, "
+        "{'ts': 1700000060000, 'value': '21.6'}]}"
+    )
+
+    result = _invoke(
+        ["telemetry", "history", DEVICE, "--keys", "temperature", "--last", "1h", "--plot"],
+        api,
+    )
+
+    assert result.exit_code == 0
+    assert "temperature" in result.output
+
+
+def test_history_plot_non_numeric():
+    api = MagicMock()
+    api.get_timeseries.return_value = "{'fw_version': [{'ts': 1700000000000, 'value': '0.12.0'}]}"
+
+    result = _invoke(
+        ["telemetry", "history", DEVICE, "--keys", "fw_version", "--last", "1h", "--plot"],
+        api,
+    )
+
+    assert result.exit_code != 0
+    assert "numeric" in result.output
+
+
+def test_history_plot_and_json_conflict():
+    api = MagicMock()
+
+    result = _invoke(
+        [
+            "telemetry",
+            "history",
+            DEVICE,
+            "--keys",
+            "temperature",
+            "--last",
+            "1h",
+            "--plot",
+            "--json",
+        ],
+        api,
+    )
+
+    assert result.exit_code != 0
+    assert "--plot and --json" in result.output
+    api.get_timeseries.assert_not_called()
+
+
 def test_history_requires_start_or_last():
     api = MagicMock()
 
