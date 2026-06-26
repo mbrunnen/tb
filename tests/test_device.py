@@ -200,6 +200,9 @@ def test_create_named_profile():
     assert result.exit_code == 0
     sent = device_api_mock.save_device.call_args.kwargs["device"]
     assert str(sent.device_profile_id.id) == PROFILE_UUID
+    profile_api.get_device_profile_infos.assert_called_once_with(
+        page_size=100, page=0, text_search="custom"
+    )
 
 
 def test_create_profile_not_found():

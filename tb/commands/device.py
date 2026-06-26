@@ -92,7 +92,7 @@ def resolve_profile_id(profile: str, name: str) -> str:
         if name == "default":
             info = api.get_default_device_profile_info()
             return str(info.id.id)
-        result = api.get_device_profile_infos(page_size=100, text_search=name)
+        result = api.get_device_profile_infos(page_size=100, page=0, text_search=name)
     except Exception as e:
         handle_api_error(e)
 
