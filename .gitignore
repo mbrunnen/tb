@@ -9,7 +9,6 @@ htmlcov/
 # is ignored; the hand-maintained customisation layer is kept.
 tb_client/*
 !tb_client/__init__.py
-!tb_client/api_client.py
 !tb_client/api/
 tb_client/api/*
 !tb_client/api/__init__.py

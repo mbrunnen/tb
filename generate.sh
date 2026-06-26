@@ -4,7 +4,6 @@
 # The generated bulk (api/, models/, runtime helpers) is gitignored. A small
 # hand-maintained customisation layer is committed and restored after each
 # generation:
-#   - api_client.py        strips RFC 6570 {?query} fragments from resource paths
 #   - __init__.py          empty, to avoid eager imports
 #   - api/__init__.py      empty, to avoid eager imports
 #   - models/__init__.py   lazy __getattr__ loader, to break circular imports
@@ -26,15 +25,13 @@ openapi-generator-cli generate \
 
 rm -rf "$pkg/api" "$pkg/models"
 cp -r "$tmp/$pkg/api" "$tmp/$pkg/models" "$pkg/"
-cp "$tmp/$pkg/rest.py" "$tmp/$pkg/configuration.py" \
-	"$tmp/$pkg/exceptions.py" "$tmp/$pkg/api_response.py" "$pkg/"
+cp "$tmp/$pkg"/*.py "$pkg/"
 
 # Restore the committed customisation layer over the fresh generator output.
 git checkout -- \
 	"$pkg/__init__.py" \
 	"$pkg/api/__init__.py" \
-	"$pkg/models/__init__.py" \
-	"$pkg/api_client.py"
+	"$pkg/models/__init__.py"
 
 uv run --with ruff ruff format "$pkg/" >/dev/null
 

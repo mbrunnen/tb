@@ -1,6 +1,18 @@
 import pytest
 
-from tb.commands._client import parse_response, resolve_device_id
+from tb.commands._client import make_api_client, parse_response, resolve_device_id
+
+
+def test_api_client_strips_uri_template():
+    from tb_client.configuration import Configuration
+
+    client = make_api_client(Configuration(host="https://tb.example"))
+    _, url, *_ = client.param_serialize(
+        method="GET",
+        resource_path="/api/foo{?keys,startTs}",
+        query_params=[("keys", "temp")],
+    )
+    assert url == "https://tb.example/api/foo?keys=temp"
 
 
 def test_parse_response_json():

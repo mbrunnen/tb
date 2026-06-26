@@ -10,10 +10,28 @@ _UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
 )
 
+_URI_TEMPLATE_RE = re.compile(r"\{\?[^}]*\}")
+
+
+def make_api_client(configuration):
+    """Build an ApiClient that drops RFC 6570 query-template fragments.
+
+    ThingsBoard's OpenAPI paths embed ``{?param}`` query-expansion templates
+    which the generated client leaves verbatim in the request path, yielding
+    malformed URLs. Strip them after the client has appended the real query.
+    """
+    from tb_client.api_client import ApiClient
+
+    class _TbApiClient(ApiClient):
+        def param_serialize(self, *args, **kwargs):
+            method, url, header_params, body, post_params = super().param_serialize(*args, **kwargs)
+            return method, _URI_TEMPLATE_RE.sub("", url), header_params, body, post_params
+
+    return _TbApiClient(configuration=configuration)
+
 
 def _configuration(profile: str):
     try:
-        from tb_client.api_client import ApiClient
         from tb_client.configuration import Configuration
     except ImportError:
         typer.echo("tb_client not found. Run ./generate.sh to generate the client.", err=True)
@@ -27,7 +45,7 @@ def _configuration(profile: str):
     configuration = Configuration(host=conf["url"].rstrip("/"))
     configuration.api_key = {"API key form": conf["token"]}
     configuration.api_key_prefix = {"API key form": "ApiKey"}
-    return ApiClient(configuration=configuration)
+    return make_api_client(configuration)
 
 
 def telemetry_api(profile: str):

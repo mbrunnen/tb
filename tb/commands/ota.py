@@ -19,8 +19,8 @@ def _format_size(size_bytes) -> str:
 
 def _get_api(profile: str):
     try:
+        from tb.commands._client import make_api_client
         from tb_client.api.ota_package_controller_api import OtaPackageControllerApi
-        from tb_client.api_client import ApiClient
         from tb_client.configuration import Configuration
     except ImportError:
         typer.echo("tb_client not found. Run ./generate.sh to generate the client.", err=True)
@@ -34,7 +34,7 @@ def _get_api(profile: str):
     configuration = Configuration(host=conf["url"].rstrip("/"))
     configuration.api_key = {"API key form": conf["token"]}
     configuration.api_key_prefix = {"API key form": "ApiKey"}
-    return OtaPackageControllerApi(ApiClient(configuration=configuration))
+    return OtaPackageControllerApi(make_api_client(configuration))
 
 
 def _handle_api_error(e):
