@@ -39,6 +39,14 @@ tb ota list --json
 tb ota get <uuid>
 tb ota delete <uuid>
 
+tb device list
+tb device list --search sensor --type default --sort-by createdTime --sort-order DESC
+tb device list --json
+tb device get <device>
+tb device create sensor-1 --profile default --label Lobby
+tb device update sensor-1 --label "Main hall" --profile thermostat
+tb device delete sensor-1 --yes
+
 tb telemetry keys <device>
 tb telemetry latest <device> --keys temperature,humidity
 tb telemetry history <device> --keys temperature --last 24h
