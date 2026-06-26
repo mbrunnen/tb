@@ -1,0 +1,19 @@
+title = "tb gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "thingsboard-api-key"
+description = "ThingsBoard API key (tb_ prefix)"
+regex = '''tb_[A-Za-z0-9]{40,}'''
+keywords = ["tb_"]
+
+[allowlist]
+description = "Documentation example values in the vendored ThingsBoard openapi.json spec"
+regexes = [
+  '''tb_5te51SkLRYpjGrujUGwqkjFvooWBlQpVe2An2Dr3w13wjfxDW''',
+  '''h6YtZHHPOvBEXxLGSVCdiul2t1C4J4''',
+  '''784f394c-42b6-435a-983c-b7beff2784f9''',
+  '''542047e6-c1b2-112e-a87e-e49247c09d4b''',
+]
