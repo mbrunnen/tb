@@ -24,6 +24,14 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.11"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Generate tb_client
+        run: |
+          npm install -g @openapitools/openapi-generator-cli
+          ./generate.sh
       - run: uv sync
       - run: uv run ruff check tb/ tests/
       - run: uv run ruff format --check tb/ tests/
