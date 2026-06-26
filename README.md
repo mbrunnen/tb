@@ -41,6 +41,7 @@ tb ota delete <uuid>
 
 tb device list
 tb device list --search sensor --type default --sort-by createdTime --sort-order DESC
+tb device list --customer <customer-uuid> --token   # devices of a customer, with access tokens
 tb device list --json
 tb device get <device>
 tb device create sensor-1 --profile default --label Lobby

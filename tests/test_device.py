@@ -98,6 +98,42 @@ def test_list_json():
     assert json.loads(result.output) == [_device_dict()]
 
 
+def test_list_customer():
+    from tb.cli import app
+
+    customer = "d6b77b60-714f-11f1-ba38-655c002e257c"
+    mock_api = MagicMock()
+    mock_api.get_customer_devices_without_preload_content.return_value = _raw_response(
+        {"data": [_device_dict()], "totalElements": 1}
+    )
+
+    with patch("tb.commands.device.device_api", return_value=mock_api):
+        result = runner.invoke(app, ["device", "list", "--customer", customer])
+
+    assert result.exit_code == 0
+    assert "sensor-1" in result.output
+    mock_api.get_customer_devices_without_preload_content.assert_called_once_with(
+        customer_id=customer, page_size=20, page=0, type=None, text_search=None
+    )
+
+
+def test_list_with_token():
+    from tb.cli import app
+
+    mock_api = MagicMock()
+    mock_api.get_tenant_devices_without_preload_content.return_value = _raw_response(
+        {"data": [_device_dict()], "totalElements": 1}
+    )
+    mock_api.get_device_credentials_by_device_id.return_value.credentials_id = "TOK123"
+
+    with patch("tb.commands.device.device_api", return_value=mock_api):
+        result = runner.invoke(app, ["device", "list", "--token", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output)[0]["accessToken"] == "TOK123"
+    mock_api.get_device_credentials_by_device_id.assert_called_once_with(device_id=DEVICE_UUID)
+
+
 def test_get():
     from tb.cli import app
 

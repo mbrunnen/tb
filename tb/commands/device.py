@@ -30,31 +30,55 @@ def _raw_json(response):
     return json.loads(response.data)
 
 
+def _device_access_token(api, device_id):
+    try:
+        return api.get_device_credentials_by_device_id(device_id=device_id).credentials_id
+    except Exception as e:
+        handle_api_error(e)
+
+
 @app.command("list")
 def list_devices(
     ctx: typer.Context,
     page_size: int = typer.Option(20, "--page-size", help="Devices per page."),
     text_search: str = typer.Option(None, "--search", "-s", help="Substring filter on name."),
     type: str = typer.Option(None, "--type", "-t", help="Filter by device profile name."),
+    customer: str = typer.Option(
+        None, "--customer", "-c", help="Only devices owned by this customer UUID."
+    ),
+    token: bool = typer.Option(False, "--token", help="Include each device's access token."),
     sort_property: str = typer.Option(None, "--sort-by", help="Property to sort by."),
     sort_order: str = typer.Option(None, "--sort-order", help="ASC or DESC."),
     output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON."),
 ):
     api = device_api(ctx.obj["profile"])
     try:
-        response = api.get_tenant_devices_without_preload_content(
-            page_size=page_size,
-            page=0,
-            type=type,
-            text_search=text_search,
-            sort_property=sort_property,
-            sort_order=sort_order,
-        )
+        if customer:
+            response = api.get_customer_devices_without_preload_content(
+                customer_id=customer,
+                page_size=page_size,
+                page=0,
+                type=type,
+                text_search=text_search,
+            )
+        else:
+            response = api.get_tenant_devices_without_preload_content(
+                page_size=page_size,
+                page=0,
+                type=type,
+                text_search=text_search,
+                sort_property=sort_property,
+                sort_order=sort_order,
+            )
     except Exception as e:
         handle_api_error(e)
 
     page = _raw_json(response)
     devices = page.get("data", [])
+
+    if token:
+        for d in devices:
+            d["accessToken"] = _device_access_token(api, (d.get("id") or {}).get("id"))
 
     if not devices:
         typer.echo("[]" if output_json else "No devices found.")
@@ -73,15 +97,19 @@ def list_devices(
     table.add_column("Type")
     table.add_column("Label")
     table.add_column("Created (UTC)")
+    if token:
+        table.add_column("Access token")
     for d in devices:
-        device_id = (d.get("id") or {}).get("id", "")
-        table.add_row(
-            device_id,
+        row = [
+            (d.get("id") or {}).get("id", ""),
             d.get("name") or "",
             d.get("type") or "",
             d.get("label") or "",
             _fmt_ts(d.get("createdTime")),
-        )
+        ]
+        if token:
+            row.append(d.get("accessToken") or "")
+        table.add_row(*row)
     console = Console()
     console.print(table)
     console.print(f"Showing {len(devices)} of {page.get('totalElements', len(devices))} devices")
