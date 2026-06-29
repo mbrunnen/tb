@@ -16,7 +16,7 @@ def test_set_url(config_dir):
 
 def test_set_url_profile(config_dir):
     result = runner.invoke(
-        app, ["-p", "staging", "config", "set-url", "https://staging.example.com"]
+        app, ["-c", "staging", "config", "set-url", "https://staging.example.com"]
     )
     assert result.exit_code == 0
     with open(config_dir / "staging.toml", "rb") as f:
@@ -47,7 +47,7 @@ def test_show(config_dir):
 
 
 def test_show_profile_isolation(config_dir):
-    runner.invoke(app, ["-p", "prod", "config", "set-url", "https://prod.example.com"])
+    runner.invoke(app, ["-c", "prod", "config", "set-url", "https://prod.example.com"])
     result = runner.invoke(app, ["config", "show"])
     assert result.exit_code == 0
     assert "prod.example.com" not in result.output

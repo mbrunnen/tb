@@ -26,7 +26,7 @@ tb config set-token <api-token>
 tb config show
 ```
 
-Multiple profiles are supported via `--profile <name>` (default: `default`).
+Multiple config profiles are supported via `--config <name>` / `-c` (default: `default`).
 
 ## Usage
 

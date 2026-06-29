@@ -13,10 +13,10 @@ app.add_typer(device.app, name="device")
 @app.callback()
 def callback(
     ctx: typer.Context,
-    profile: str = typer.Option("default", "-p", "--profile", help="Config profile."),
+    config: str = typer.Option("default", "-c", "--config", help="Config profile to use."),
 ):
     ctx.ensure_object(dict)
-    ctx.obj["profile"] = profile
+    ctx.obj["profile"] = config
 
 
 def main() -> None:
