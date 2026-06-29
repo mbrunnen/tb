@@ -571,3 +571,111 @@ def test_download_by_profile_no_assignment(tmp_path, monkeypatch):
 
     assert result.exit_code != 0
     assert "no FIRMWARE" in result.output
+
+
+DEVICE_UUID = "22222222-2222-2222-2222-222222222222"
+
+
+def test_download_by_device_current_direct(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mock_api = MagicMock()
+    mock_api.get_ota_package_info_by_id.return_value = _mock_info(pkg_id="dev-fw")
+    mock_api.download_ota_package.return_value = b"FW"
+    device = {
+        "firmwareId": {"id": "dev-fw"},
+        "softwareId": None,
+        "deviceProfileId": {"id": PROFILE_UUID},
+    }
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.resolve_device_id", return_value=DEVICE_UUID),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.raw_get", return_value=device),
+    ):
+        result = runner.invoke(app, ["ota", "download", "--device", "thermostat-01"])
+
+    assert result.exit_code == 0, result.output
+    mock_api.download_ota_package.assert_called_once_with(ota_package_id="dev-fw")
+
+
+def test_download_by_device_current_profile_fallback(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mock_api = MagicMock()
+    mock_api.get_ota_package_info_by_id.return_value = _mock_info(pkg_id="prof-fw")
+    mock_api.download_ota_package.return_value = b"FW"
+    device = {
+        "firmwareId": None,
+        "softwareId": None,
+        "deviceProfileId": {"id": PROFILE_UUID},
+    }
+    profile = {"firmwareId": {"id": "prof-fw"}, "softwareId": None}
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.resolve_device_id", return_value=DEVICE_UUID),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.raw_get", side_effect=[device, profile]),
+    ):
+        result = runner.invoke(app, ["ota", "download", "--device", "thermostat-01"])
+
+    assert result.exit_code == 0, result.output
+    mock_api.download_ota_package.assert_called_once_with(ota_package_id="prof-fw")
+
+
+def test_download_by_device_version(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    pkg = _mock_info(pkg_id="v3", version="3.0")
+    pkg.created_time = 300
+    mock_api = MagicMock()
+    mock_api.get_ota_packages1.return_value.data = [pkg]
+    mock_api.download_ota_package.return_value = b"V3"
+    device = {
+        "firmwareId": {"id": "ignored"},
+        "softwareId": None,
+        "deviceProfileId": {"id": PROFILE_UUID},
+    }
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.resolve_device_id", return_value=DEVICE_UUID),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.raw_get", return_value=device),
+    ):
+        result = runner.invoke(
+            app, ["ota", "download", "--device", "thermostat-01", "--version", "3.0"]
+        )
+
+    assert result.exit_code == 0, result.output
+    mock_api.get_ota_packages1.assert_called_once_with(
+        device_profile_id=PROFILE_UUID,
+        type="FIRMWARE",
+        page_size=100,
+        page=0,
+        text_search=None,
+        sort_property=None,
+        sort_order=None,
+    )
+    mock_api.download_ota_package.assert_called_once_with(ota_package_id="v3")
+
+
+def test_download_by_device_no_assignment(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mock_api = MagicMock()
+    device = {
+        "firmwareId": None,
+        "softwareId": None,
+        "deviceProfileId": {"id": PROFILE_UUID},
+    }
+    profile = {"firmwareId": None, "softwareId": None}
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.resolve_device_id", return_value=DEVICE_UUID),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.raw_get", side_effect=[device, profile]),
+    ):
+        result = runner.invoke(app, ["ota", "download", "--device", "thermostat-01"])
+
+    assert result.exit_code != 0
+    assert "no FIRMWARE" in result.output

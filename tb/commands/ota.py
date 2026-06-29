@@ -4,7 +4,7 @@ from pathlib import Path
 import typer
 
 import tb.config as cfg
-from tb.commands._client import _UUID_RE, device_api, raw_get, resolve_profile_id
+from tb.commands._client import _UUID_RE, device_api, raw_get, resolve_device_id, resolve_profile_id
 
 app = typer.Typer(no_args_is_help=True, help="Manage OTA packages.")
 
@@ -230,8 +230,41 @@ def _resolve_package_info(
             p for p in page.data if (p.title or "") == name and (p.type or "") == pkg_type
         ]
         return _select_from_candidates(candidates, version, f"name '{name}'")
-    typer.echo("Selector not implemented yet.", err=True)
-    raise typer.Exit(1)
+    if device:
+        device_id = resolve_device_id(cfg_profile, device)
+        try:
+            dev = raw_get(device_api(cfg_profile), f"/api/device/{device_id}")
+        except Exception as e:
+            _handle_api_error(e)
+        profile_id = dev["deviceProfileId"]["id"]
+        if version:
+            try:
+                page = api.get_ota_packages1(
+                    device_profile_id=profile_id,
+                    type=pkg_type,
+                    page_size=100,
+                    page=0,
+                    text_search=None,
+                    sort_property=None,
+                    sort_order=None,
+                )
+            except Exception as e:
+                _handle_api_error(e)
+            return _select_from_candidates(list(page.data), version, f"device '{device}'")
+        field = "firmwareId" if pkg_type == "FIRMWARE" else "softwareId"
+        ref = dev.get(field)
+        if not ref:
+            try:
+                profile = raw_get(device_api(cfg_profile), f"/api/deviceProfile/{profile_id}")
+            except Exception as e:
+                _handle_api_error(e)
+            ota_id = _assigned_ota_id(profile, pkg_type, f"Device '{device}' and its profile")
+        else:
+            ota_id = ref["id"]
+        try:
+            return api.get_ota_package_info_by_id(ota_package_id=ota_id)
+        except Exception as e:
+            _handle_api_error(e)
 
 
 def _write_package(info, data, output, force):
