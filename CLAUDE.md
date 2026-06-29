@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`tb` is a CLI for ThingsBoard OTA package management. It uses a Python client generated from `openapi-4.3.0.1PE.json` and exposes `tb config` and `tb ota` subcommands.
+`tbctl` is a CLI for ThingsBoard OTA package management. It uses a Python client generated from `openapi-4.3.0.1PE.json` and exposes `tbctl config` and `tbctl ota` subcommands.
 
 The client lives in `generated/tb_client/`, built by `./generate.sh`.
 
@@ -12,25 +12,25 @@ The client lives in `generated/tb_client/`, built by `./generate.sh`.
 
 ```sh
 uv sync                 # install deps into venv
-uv run tb               # run the CLI during development
+uv run tbctl            # run the CLI during development
 pipx install .          # install the CLI globally
-tb --install-completion zsh  # install zsh completion to ~/.zfunc/_tb
+tbctl --install-completion zsh  # install zsh completion to ~/.zfunc/_tbctl
 
-uv run pytest                                     # run all tests
-uv run pytest tests/test_ota.py::test_delete      # run a single test
-uv run pytest --cov=tb --cov-report=term-missing  # with coverage
+uv run pytest                                        # run all tests
+uv run pytest tests/test_ota.py::test_delete        # run a single test
+uv run pytest --cov=tbctl --cov-report=term-missing  # with coverage
 
-pre-commit run --all-files             # lint + format check
-uv run ruff check tb/ tests/           # lint
-uv run ruff format --check tb/ tests/  # format check
+pre-commit run --all-files              # lint + format check
+uv run ruff check tbctl/ tests/         # lint
+uv run ruff format --check tbctl/ tests/  # format check
 ```
 
 ## Architecture
 
-- `tb/cli.py` - root Typer app
-- `tb/config.py` - reads/writes `~/.config/tb/config.toml` (url + token)
-- `tb/commands/` - one module per subcommand group (`config_cmd.py`, `ota.py`, `telemetry.py`, `attributes.py`)
-- `tb/commands/_client.py` - shared helpers for the telemetry/attributes commands: authenticated client builders, `resolve_device_id` (UUID or name lookup), `handle_api_error`, and `parse_response`
+- `tbctl/cli.py` - root Typer app
+- `tbctl/config.py` - reads/writes `~/.config/tbctl/config.toml` (url + token)
+- `tbctl/commands/` - one module per subcommand group (`config_cmd.py`, `ota.py`, `telemetry.py`, `attributes.py`)
+- `tbctl/commands/_client.py` - shared helpers for the telemetry/attributes commands: authenticated client builders, `resolve_device_id` (UUID or name lookup), `handle_api_error`, and `parse_response`
 - `generated/tb_client/` - Python client generated from `openapi-4.3.0.1PE.json` by `./generate.sh` (gitignored; run it once before installing or testing)
 
 The generated client returns telemetry and attribute endpoints as a Python `repr` string (single-quoted, not valid JSON). `parse_response` coerces these via `json.loads` then `ast.literal_eval`; wrap every such response in it.
