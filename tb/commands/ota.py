@@ -177,6 +177,22 @@ def _select_from_candidates(candidates, version, label):
     return max(candidates, key=lambda c: c.created_time or 0)
 
 
+def _packages_for_profile(api, profile_id, pkg_type):
+    try:
+        page = api.get_ota_packages1(
+            device_profile_id=profile_id,
+            type=pkg_type,
+            page_size=100,
+            page=0,
+            text_search=None,
+            sort_property=None,
+            sort_order=None,
+        )
+    except Exception as e:
+        _handle_api_error(e)
+    return list(page.data)
+
+
 def _resolve_package_info(
     cfg_profile, *, package_id, device_profile, device, name, version, latest, pkg_type
 ):
@@ -193,19 +209,8 @@ def _resolve_package_info(
             else resolve_profile_id(cfg_profile, device_profile)
         )
         if version:
-            try:
-                page = api.get_ota_packages1(
-                    device_profile_id=profile_id,
-                    type=pkg_type,
-                    page_size=100,
-                    page=0,
-                    text_search=None,
-                    sort_property=None,
-                    sort_order=None,
-                )
-            except Exception as e:
-                _handle_api_error(e)
-            return _select_from_candidates(list(page.data), version, f"profile '{device_profile}'")
+            candidates = _packages_for_profile(api, profile_id, pkg_type)
+            return _select_from_candidates(candidates, version, f"profile '{device_profile}'")
         try:
             profile = raw_get(device_api(cfg_profile), f"/api/deviceProfile/{profile_id}")
         except Exception as e:
@@ -238,19 +243,8 @@ def _resolve_package_info(
             _handle_api_error(e)
         profile_id = dev["deviceProfileId"]["id"]
         if version:
-            try:
-                page = api.get_ota_packages1(
-                    device_profile_id=profile_id,
-                    type=pkg_type,
-                    page_size=100,
-                    page=0,
-                    text_search=None,
-                    sort_property=None,
-                    sort_order=None,
-                )
-            except Exception as e:
-                _handle_api_error(e)
-            return _select_from_candidates(list(page.data), version, f"device '{device}'")
+            candidates = _packages_for_profile(api, profile_id, pkg_type)
+            return _select_from_candidates(candidates, version, f"device '{device}'")
         field = "firmwareId" if pkg_type == "FIRMWARE" else "softwareId"
         ref = dev.get(field)
         if not ref:
