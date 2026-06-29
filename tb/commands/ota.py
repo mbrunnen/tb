@@ -4,6 +4,7 @@ from pathlib import Path
 import typer
 
 import tb.config as cfg
+from tb.commands._client import _UUID_RE, device_api, raw_get, resolve_profile_id
 
 app = typer.Typer(no_args_is_help=True, help="Manage OTA packages.")
 
@@ -155,6 +156,15 @@ def _validate_selectors(package_id, device_profile, device, name, version, lates
         raise typer.Exit(1)
 
 
+def _assigned_ota_id(entity, pkg_type, label):
+    field = "firmwareId" if pkg_type == "FIRMWARE" else "softwareId"
+    ref = entity.get(field)
+    if not ref:
+        typer.echo(f"{label} has no {pkg_type} package assigned.", err=True)
+        raise typer.Exit(1)
+    return ref["id"]
+
+
 def _select_from_candidates(candidates, version, label):
     if version:
         candidates = [c for c in candidates if c.version == version]
@@ -174,6 +184,35 @@ def _resolve_package_info(
     if package_id:
         try:
             return api.get_ota_package_info_by_id(ota_package_id=package_id)
+        except Exception as e:
+            _handle_api_error(e)
+    if device_profile:
+        profile_id = (
+            device_profile
+            if _UUID_RE.match(device_profile)
+            else resolve_profile_id(cfg_profile, device_profile)
+        )
+        if version:
+            try:
+                page = api.get_ota_packages1(
+                    device_profile_id=profile_id,
+                    type=pkg_type,
+                    page_size=100,
+                    page=0,
+                    text_search=None,
+                    sort_property=None,
+                    sort_order=None,
+                )
+            except Exception as e:
+                _handle_api_error(e)
+            return _select_from_candidates(list(page.data), version, f"profile '{device_profile}'")
+        try:
+            profile = raw_get(device_api(cfg_profile), f"/api/deviceProfile/{profile_id}")
+        except Exception as e:
+            _handle_api_error(e)
+        ota_id = _assigned_ota_id(profile, pkg_type, f"Profile '{device_profile}'")
+        try:
+            return api.get_ota_package_info_by_id(ota_package_id=ota_id)
         except Exception as e:
             _handle_api_error(e)
     if name:

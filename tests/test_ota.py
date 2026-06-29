@@ -463,3 +463,111 @@ def test_download_by_name_version_not_found():
 
     assert result.exit_code != 0
     assert "9.9" in result.output
+
+
+PROFILE_UUID = "11111111-1111-1111-1111-111111111111"
+
+
+def test_download_by_profile_current_firmware(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mock_api = MagicMock()
+    mock_api.get_ota_package_info_by_id.return_value = _mock_info(pkg_id="fw-id")
+    mock_api.download_ota_package.return_value = b"FW"
+    profile = {"firmwareId": {"id": "fw-id"}, "softwareId": {"id": "sw-id"}}
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.raw_get", return_value=profile),
+    ):
+        result = runner.invoke(app, ["ota", "download", "--device-profile", PROFILE_UUID])
+
+    assert result.exit_code == 0, result.output
+    mock_api.get_ota_package_info_by_id.assert_called_once_with(ota_package_id="fw-id")
+    mock_api.download_ota_package.assert_called_once_with(ota_package_id="fw-id")
+
+
+def test_download_by_profile_current_software(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mock_api = MagicMock()
+    mock_api.get_ota_package_info_by_id.return_value = _mock_info(
+        pkg_id="sw-id", pkg_type="SOFTWARE"
+    )
+    mock_api.download_ota_package.return_value = b"SW"
+    profile = {"firmwareId": {"id": "fw-id"}, "softwareId": {"id": "sw-id"}}
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.raw_get", return_value=profile),
+    ):
+        result = runner.invoke(
+            app, ["ota", "download", "--device-profile", PROFILE_UUID, "--type", "SOFTWARE"]
+        )
+
+    assert result.exit_code == 0, result.output
+    mock_api.get_ota_package_info_by_id.assert_called_once_with(ota_package_id="sw-id")
+
+
+def test_download_by_profile_name_resolves(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mock_api = MagicMock()
+    mock_api.get_ota_package_info_by_id.return_value = _mock_info(pkg_id="fw-id")
+    mock_api.download_ota_package.return_value = b"FW"
+    profile = {"firmwareId": {"id": "fw-id"}}
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.resolve_profile_id", return_value=PROFILE_UUID) as rp,
+        patch("tb.commands.ota.raw_get", return_value=profile),
+    ):
+        result = runner.invoke(app, ["ota", "download", "--device-profile", "sensor-v2"])
+
+    assert result.exit_code == 0, result.output
+    rp.assert_called_once()
+
+
+def test_download_by_profile_version(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    pkg = _mock_info(pkg_id="v2", version="2.0")
+    pkg.created_time = 200
+    mock_api = MagicMock()
+    mock_api.get_ota_packages1.return_value.data = [pkg]
+    mock_api.download_ota_package.return_value = b"V2"
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+    ):
+        result = runner.invoke(
+            app, ["ota", "download", "--device-profile", PROFILE_UUID, "--version", "2.0"]
+        )
+
+    assert result.exit_code == 0, result.output
+    mock_api.get_ota_packages1.assert_called_once_with(
+        device_profile_id=PROFILE_UUID,
+        type="FIRMWARE",
+        page_size=100,
+        page=0,
+        text_search=None,
+        sort_property=None,
+        sort_order=None,
+    )
+    mock_api.download_ota_package.assert_called_once_with(ota_package_id="v2")
+
+
+def test_download_by_profile_no_assignment(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    mock_api = MagicMock()
+    profile = {"firmwareId": None, "softwareId": None}
+
+    with (
+        patch("tb.commands.ota._get_api", return_value=mock_api),
+        patch("tb.commands.ota.device_api", return_value=MagicMock()),
+        patch("tb.commands.ota.raw_get", return_value=profile),
+    ):
+        result = runner.invoke(app, ["ota", "download", "--device-profile", PROFILE_UUID])
+
+    assert result.exit_code != 0
+    assert "no FIRMWARE" in result.output
