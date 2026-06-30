@@ -33,6 +33,6 @@ jobs:
           npm install -g @openapitools/openapi-generator-cli
           ./generate.sh
       - run: uv sync
-      - run: uv run ruff check tb/ tests/
-      - run: uv run ruff format --check tb/ tests/
+      - run: uv run ruff check tbctl/ tests/
+      - run: uv run ruff format --check tbctl/ tests/
       - run: uv run pytest
