@@ -5,10 +5,16 @@ CLI for ThingsBoard OTA package management.
 ## Installation
 
 ```sh
-pipx install .
+pipx install \
+  --index-url https://test.pypi.org/simple/ \
+  --pip-args="--extra-index-url https://pypi.org/simple/" \
+  tbctl
 tbctl --install-completion zsh
 exec zsh
 ```
+
+`tbctl` is published to TestPyPI; the extra index lets pipx resolve the runtime
+dependencies from PyPI.
 
 ## Update
 
